@@ -1065,6 +1065,8 @@
 
   <script>
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx7-mtwoEgzzm3szrGj6qdSZ6r5NY0afKFloXzNeTJ1fc3-fZ5Q1VYjTwCrvy8GXaeH/exec";
+    const ROTULO_IDENTIFICADOR = "SIMADE";
+    const SENHA_PADRAO_ACESSO = "portomario26";
 
     if (typeof google === 'undefined') { window.google = {}; }
     if (!google.script) { google.script = {}; }
@@ -1213,7 +1215,8 @@
     function processarLogin() {
       if (perfilSelecionado === 'Secretaria' || perfilSelecionado === 'Supervisao') {
         const senhaInput = document.getElementById('input-senha-inline');
-        if (senhaInput.value === 'portomario26') efetuarLogin(perfilSelecionado);
+        const senhaEsperada = (typeof SENHA_PADRAO_ACESSO !== 'undefined' && SENHA_PADRAO_ACESSO) ? SENHA_PADRAO_ACESSO : 'portomario26';
+        if (senhaInput.value === senhaEsperada) efetuarLogin(perfilSelecionado);
         else mostrarModal('Acesso Negado', 'A senha informada está incorreta. Verifique e tente novamente.', () => {
           senhaInput.value = '';
           setTimeout(() => senhaInput.focus(), 50);
@@ -1238,7 +1241,11 @@
     }
 
     function fazerLogout() {
-      mostrarConfirm("Deseja realmente sair do sistema?", () => {
+      const msg = alteracoesNaoSalvas
+        ? "Você tem um lançamento de chamada em andamento não salvo. Deseja realmente descartar as alterações e sair do sistema?"
+        : "Deseja realmente sair do sistema?";
+      mostrarConfirm(msg, () => {
+        alteracoesNaoSalvas = false;
         sairDeFatoSemConfirmacao();
       });
     }
@@ -1259,6 +1266,14 @@
     }
 
     function voltarParaTurmas() {
+      if (alteracoesNaoSalvas) {
+        mostrarConfirm("Você tem um lançamento de chamada em andamento. Deseja realmente cancelar e voltar? As alterações não salvas serão perdidas.", () => {
+          alteracoesNaoSalvas = false;
+          exibirPainelTurmasSemConfirmacao();
+          carregarStatusDosCards();
+        });
+        return;
+      }
       exibirPainelTurmasSemConfirmacao();
     }
 
@@ -1323,14 +1338,46 @@
       document.getElementById('modal-adicionar-estudante').style.display = 'none';
     }
 
+    function confirmarAdicionarEstudante() {
+      if (state.perfil === 'Professor') return;
+      const rotuloAtual = (typeof ROTULO_IDENTIFICADOR !== 'undefined' && ROTULO_IDENTIFICADOR) ? ROTULO_IDENTIFICADOR : 'SIMADE';
+      const novoNomeInput = document.getElementById('novo-nome');
+      const novoSimadeInput = document.getElementById('novo-simade');
+      const nome = (novoNomeInput ? novoNomeInput.value : '').trim().toUpperCase();
+      const simade = (novoSimadeInput ? novoSimadeInput.value : '').trim().toUpperCase();
+
+      if (!nome) {
+        return mostrarModal("AVISO", "O nome do estudante é obrigatório.");
+      }
+      if (!simade) {
+        return mostrarModal("AVISO", "O " + rotuloAtual + " do estudante é obrigatório.");
+      }
+
+      fecharModalAdicionar();
+      mostrarResultado('loading-inline');
+      google.script.run
+        .withSuccessHandler(res => {
+          mostrarModal("ESTUDANTE ADICIONADO", res.mensagem || "Estudante cadastrado com sucesso!", () => {
+            if (state.modo === 'relatorio_geral') carregarRelatorioGeralMatriz();
+            else if (state.perfil === 'Professor') prepararDiario();
+            else abrirRelatorioTurma(state.turmaId);
+          });
+        })
+        .withFailureHandler(err => {
+          mostrarModal("ERRO NO CADASTRO", err.message || "Falha ao adicionar estudante.");
+        })
+        .adicionarEstudante(state.turmaId, nome, simade, state.perfil);
+    }
+
     let estudanteParaRemanejar = { nome: '', simade: '' };
 
     function abrirModalRemanejar(nome, simade) {
       if (state.perfil === 'Professor') return;
+      const rotuloAtual = (typeof ROTULO_IDENTIFICADOR !== 'undefined' && ROTULO_IDENTIFICADOR) ? ROTULO_IDENTIFICADOR : 'SIMADE';
       estudanteParaRemanejar = { nome: nome, simade: simade };
       
       document.getElementById('remanejar-nome-display').innerText = nome;
-      document.getElementById('remanejar-simade-display').innerText = 'SIMADE: ' + (simade || 'Não informado');
+      document.getElementById('remanejar-simade-display').innerText = rotuloAtual + ': ' + (simade || 'Não informado');
       document.getElementById('remanejar-origem-display').innerText = state.turmaNome || state.turmaId;
       
       const selectDestino = document.getElementById('select-turma-remanejar');
@@ -1378,6 +1425,7 @@
 
     function confirmarEditarEstudante() {
       if (state.perfil === 'Professor') return;
+      const rotuloAtual = (typeof ROTULO_IDENTIFICADOR !== 'undefined' && ROTULO_IDENTIFICADOR) ? ROTULO_IDENTIFICADOR : 'SIMADE';
       const novoNomeInput = document.getElementById('editar-nome-input');
       const novoNome = (novoNomeInput ? novoNomeInput.value : '').trim().toUpperCase();
 
@@ -1393,7 +1441,7 @@
       fecharModalEditarEstudante();
 
       const simadeTexto = estudanteParaEditar.simadeOriginal ? (' (' + estudanteParaEditar.simadeOriginal + ')') : '';
-      const msgConfirm = 'Deseja realmente alterar o nome do estudante de "' + estudanteParaEditar.nomeOriginal + '" para "' + novoNome + '"?\n\nO SIMADE' + simadeTexto + ' permanece inalterado e o novo nome será sincronizado em todas as guias da planilha.';
+      const msgConfirm = 'Deseja realmente alterar o nome do estudante de "' + estudanteParaEditar.nomeOriginal + '" para "' + novoNome + '"?\n\nO ' + rotuloAtual + simadeTexto + ' permanece inalterado e o novo nome será sincronizado em todas as guias da planilha.';
 
       mostrarConfirm(msgConfirm, () => {
         mostrarResultado('loading-inline');
@@ -1494,6 +1542,17 @@
     }
 
     function executarAcaoCard(t, card, gridTurma) {
+      if (alteracoesNaoSalvas) {
+        mostrarConfirm("Você tem uma chamada em andamento não salva. Deseja realmente descartar os dados para abrir outra turma?", () => {
+          alteracoesNaoSalvas = false;
+          carregarTurmaSelecionada(t, card, gridTurma);
+        });
+        return;
+      }
+      carregarTurmaSelecionada(t, card, gridTurma);
+    }
+
+    function carregarTurmaSelecionada(t, card, gridTurma) {
       state.turmaId = t.id;
       state.turmaNome = t.nome;
       
@@ -1654,12 +1713,22 @@
       document.getElementById('btn-add-estudante-chamada').style.display = state.perfil === 'Professor' ? 'none' : 'block';
       
       mostrarResultado('loading-inline');
-      google.script.run.withSuccessHandler(payload => {
+      google.script.run
+        .withSuccessHandler(payload => {
            window.diasChamada = payload.datas || [];
            window.jaPossuiRegistro = !!payload.jaPossuiRegistro;
+           window.dataValida = payload.dataValida !== false;
 
            const dataCurtaLocal = payload.dataCurta || dataFormatada.substring(0, 5).trim();
            const colIdx = window.diasChamada.indexOf(dataCurtaLocal);
+
+           if (!window.dataValida || colIdx === -1) {
+             mostrarModal("SEM AULA", "Não há aula prevista no calendário escolar para esta data (" + dataCurtaLocal + "). O lançamento e salvamento de chamadas está bloqueado para este dia.", () => {
+               resetarUI();
+               carregarStatusDosCards();
+             });
+             return;
+           }
 
            dadosChamadaGeral = payload.alunos.map(a => {
              let statusExistente = (colIdx !== -1 && a.historico && a.historico[colIdx]) ? String(a.historico[colIdx]).trim().toUpperCase() : '';
@@ -1677,6 +1746,12 @@
 
            const alunosAtivos = dadosChamadaGeral.filter(a => !a.inativo);
            document.getElementById('toggle-todos').checked = alunosAtivos.length > 0 && alunosAtivos.every(a => a.status === '•');
+        })
+        .withFailureHandler(err => {
+           mostrarModal("ERRO", "Falha ao carregar dados da chamada: " + (err.message || err), () => {
+             resetarUI();
+             carregarStatusDosCards();
+           });
         })
         .getDadosChamada(state.turmaId, mesExtenso, dataFormatada);
     }
@@ -1781,6 +1856,14 @@
     }
 
     function enviarChamada() {
+      const dataCurtaLocal = dataFormatada.substring(0, 5).trim();
+      const colIdx = (window.diasChamada || []).indexOf(dataCurtaLocal);
+
+      if (window.dataValida === false || colIdx === -1) {
+        mostrarModal("SEM AULA", "Não é possível salvar a chamada: a data " + dataCurtaLocal + " está marcada como SEM AULA no calendário escolar.");
+        return;
+      }
+
       const turmaSalvaId = state.turmaId;
       const turmaSalvaNome = state.turmaNome;
       const ehProfessor = state.perfil === 'Professor';
@@ -2024,11 +2107,12 @@
             `;
           }).join('');
 
+          const rotuloId = (typeof ROTULO_IDENTIFICADOR !== 'undefined' && ROTULO_IDENTIFICADOR) ? ROTULO_IDENTIFICADOR : 'SIMADE';
           wrapper.innerHTML = `
             <table class="tabela-matriz">
               <thead>
                 <tr>
-                  <th>SIMADE</th>
+                  <th>${rotuloId}</th>
                   <th style="text-align:left;">Estudante</th>
                   ${thDatas}
                   <th>Faltas</th>
@@ -2060,7 +2144,7 @@
             URL.revokeObjectURL(url);
           } catch(e) { mostrarModal("ERRO", "Falha ao gerar o PDF localmente."); }
         })
-        .exportarRelatorioGeralPDF(state.turmaId, mesSelecionado);
+        .exportarRelatorioGeralPDF(state.turmaId, mesSelecionado, (typeof ROTULO_IDENTIFICADOR !== 'undefined' && ROTULO_IDENTIFICADOR) ? ROTULO_IDENTIFICADOR : 'SIMADE');
     }
   </script>
 </body>
