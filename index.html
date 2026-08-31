@@ -697,12 +697,132 @@
       border-radius: var(--radius-md); 
       border: 1px solid var(--border-color); 
       box-shadow: var(--shadow-sm);
+      position: relative;
+      background: white;
+      -webkit-overflow-scrolling: touch;
     }
-    .tabela-matriz { width: 100%; border-collapse: collapse; min-width: 700px; font-size: 13px; background: white; }
-    .tabela-matriz th, .tabela-matriz td { border: 1px solid var(--border-color); padding: 10px 8px; text-align: center; }
-    .tabela-matriz th { background: #f8fafc; font-weight: 600; color: var(--primary-text); font-size: 11px; text-transform: uppercase; white-space: nowrap; letter-spacing: 0.5px; }
-    .tabela-matriz td.col-nome { text-align: left; font-weight: 600; white-space: nowrap; text-transform: uppercase; }
-    .tabela-matriz tr:nth-child(even) { background-color: #f8fafc; }
+    .tabela-matriz { 
+      width: max-content; 
+      min-width: 100%;
+      border-collapse: separate; 
+      border-spacing: 0; 
+      font-size: 13px; 
+      background: white; 
+    }
+    .tabela-matriz th, .tabela-matriz td { 
+      border-right: 1px solid var(--border-color); 
+      border-bottom: 1px solid var(--border-color); 
+      padding: 10px 6px; 
+      text-align: center; 
+    }
+    .tabela-matriz th { 
+      background: #f8fafc; 
+      font-weight: 600; 
+      color: var(--primary-text); 
+      font-size: 11px; 
+      text-transform: uppercase; 
+      white-space: nowrap; 
+      letter-spacing: 0.5px; 
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .tabela-matriz td.col-nome { 
+      text-align: left; 
+      font-weight: 600; 
+      white-space: nowrap; 
+      text-transform: uppercase; 
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tabela-matriz tr:nth-child(even) td { background-color: #f8fafc; }
+    .tabela-matriz tr:nth-child(odd) td { background-color: #ffffff; }
+
+    /* Colunas Congeladas / Fixas (1ª: SIMADE/ID e 2ª: Estudante) */
+    .tabela-matriz .col-sticky-1 {
+      position: sticky !important;
+      left: 0 !important;
+      min-width: 90px;
+      max-width: 95px;
+      width: 90px;
+      z-index: 4;
+      background-color: #ffffff;
+      border-right: 1px solid var(--border-color) !important;
+    }
+    .tabela-matriz .col-sticky-2 {
+      position: sticky !important;
+      left: 90px !important;
+      min-width: 200px;
+      max-width: 260px;
+      width: 220px;
+      z-index: 4;
+      background-color: #ffffff;
+      border-right: 2px solid #94a3b8 !important;
+      box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.14);
+    }
+    .tabela-matriz thead th.col-sticky-1 {
+      z-index: 10 !important;
+      background-color: #f1f5f9 !important;
+    }
+    .tabela-matriz thead th.col-sticky-2 {
+      z-index: 10 !important;
+      background-color: #f1f5f9 !important;
+      border-right: 2px solid #94a3b8 !important;
+      box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.14);
+    }
+    .tabela-matriz tbody tr:nth-child(even) td.col-sticky-1,
+    .tabela-matriz tbody tr:nth-child(even) td.col-sticky-2 {
+      background-color: #f8fafc !important;
+    }
+    .tabela-matriz tbody tr:nth-child(odd) td.col-sticky-1,
+    .tabela-matriz tbody tr:nth-child(odd) td.col-sticky-2 {
+      background-color: #ffffff !important;
+    }
+    .tabela-matriz tbody tr:hover td {
+      background-color: #f1f5f9 !important;
+    }
+    .tabela-matriz tbody tr:hover td.col-sticky-1,
+    .tabela-matriz tbody tr:hover td.col-sticky-2 {
+      background-color: #e2e8f0 !important;
+    }
+
+    /* Colunas de Dados */
+    .tabela-matriz th.col-data,
+    .tabela-matriz td.col-data {
+      min-width: 36px;
+      width: 38px;
+      max-width: 44px;
+      padding: 10px 4px;
+    }
+    .tabela-matriz th.col-faltas,
+    .tabela-matriz td.col-faltas {
+      min-width: 58px;
+      width: 62px;
+      font-weight: 700;
+    }
+    .tabela-matriz th.col-freq,
+    .tabela-matriz td.col-freq {
+      min-width: 68px;
+      width: 72px;
+      font-weight: 700;
+    }
+
+    /* Espaçador de Rolagem: Permite rolar até a última coluna encostar nas colunas fixadas */
+    .tabela-matriz .col-scroll-spacer {
+      min-width: calc(100vw - 390px);
+      width: calc(100vw - 390px);
+      border-right: none !important;
+      border-bottom: 1px solid transparent !important;
+      background: transparent !important;
+      padding: 0 !important;
+      pointer-events: none;
+    }
+    @media (max-width: 768px) {
+      .tabela-matriz .col-scroll-spacer {
+        min-width: calc(100vw - 250px);
+        width: calc(100vw - 250px);
+      }
+    }
     
     .btn-attendance { background: none; border: none; cursor: pointer; padding: 0; margin-left: 10px; transition: transform 0.1s;}
     .btn-attendance:active { transform: scale(0.9); }
@@ -872,7 +992,7 @@
       </div>
       
       <h1>Controle de Frequência</h1>
-      <h3>MANHÃ | SEDE</h3>
+      <h3>SEDE | MANHÃ</h3>
       <p>Selecione seu perfil de acesso para continuar</p>
       
       <div class="profile-tabs">
@@ -1730,7 +1850,12 @@
              return;
            }
 
-           dadosChamadaGeral = payload.alunos.map(a => {
+           let alunosCarregados = payload.alunos || [];
+           if (state.perfil === 'Professor') {
+             alunosCarregados = alunosCarregados.filter(a => !a.inativo);
+           }
+
+           dadosChamadaGeral = alunosCarregados.map(a => {
              let statusExistente = (colIdx !== -1 && a.historico && a.historico[colIdx]) ? String(a.historico[colIdx]).trim().toUpperCase() : '';
              let statusInicial = (statusExistente === 'F') ? 'F' : '•';
              let faltasIniciais = a.faltas;
@@ -1741,6 +1866,10 @@
            dadosChamadaGeral.sort((a, b) => Number(a.inativo) - Number(b.inativo) || (a.nome || '').localeCompare(b.nome || ''));
            mostrarResultado('tela-chamada');
            alteracoesNaoSalvas = true;
+
+           try {
+             history.pushState({ chamadaEmAndamento: true }, "");
+           } catch(e) {}
 
            renderizarListaChamada();
 
@@ -1753,7 +1882,7 @@
              carregarStatusDosCards();
            });
         })
-        .getDadosChamada(state.turmaId, mesExtenso, dataFormatada);
+        .getDadosChamada(state.turmaId, mesExtenso, dataFormatada, state.perfil);
     }
 
     function renderizarListaChamada() {
@@ -2074,7 +2203,7 @@
           document.getElementById('matriz-header-display').innerHTML = `<strong>${dados.turmaNome}</strong><br><span style="font-size:14px; font-weight:500; color:var(--secondary-text);">RELATÓRIO GERAL - MÊS DE ${dados.mes}</span>`;
 
           const wrapper = document.getElementById('matriz-tabela-wrapper');
-          let thDatas = dados.datas.map(d => `<th>${d}</th>`).join('');
+          let thDatas = dados.datas.map(d => `<th class="col-data">${d}</th>`).join('');
 
           let alunosOrdenados = (dados.alunos || []).slice().sort((a, b) => {
             if (Number(!!a.inativo) !== Number(!!b.inativo)) {
@@ -2090,7 +2219,7 @@
               if (val === 'F') color = 'var(--danger-color)';
               else if (val === '•' || val === 'P') color = 'var(--success-color)';
               else if (val === '--') color = 'var(--secondary-text)';
-              return `<td style="font-weight: 600; color: ${color};">${val}</td>`;
+              return `<td class="col-data" style="font-weight: 600; color: ${color};">${val}</td>`;
             }).join('');
 
             let estiloLinhaInativo = a.inativo ? 'text-decoration: line-through; opacity: 0.6;' : '';
@@ -2098,11 +2227,12 @@
 
             return `
               <tr style="${estiloLinhaInativo}">
-                <td style="color:var(--secondary-text); font-size:11px;">${a.simade || ''}</td>
-                <td class="col-nome">${a.nome}${tagMatrizInativo}</td>
+                <td class="col-sticky-1" style="color:var(--secondary-text); font-size:11px;">${a.simade || ''}</td>
+                <td class="col-nome col-sticky-2">${a.nome}${tagMatrizInativo}</td>
                 ${tdsHist}
-                <td style="font-weight:600; color:var(--danger-color);">${a.totalFaltas}</td>
-                <td style="font-weight:600; color:${a.freqPercent < 75 ? 'var(--danger-color)' : 'var(--success-color)'};">${a.freqPercent}%</td>
+                <td class="col-faltas" style="color:var(--danger-color);">${a.totalFaltas}</td>
+                <td class="col-freq" style="color:${a.freqPercent < 75 ? 'var(--danger-color)' : 'var(--success-color)'};">${a.freqPercent}%</td>
+                <td class="col-scroll-spacer" aria-hidden="true"></td>
               </tr>
             `;
           }).join('');
@@ -2112,11 +2242,12 @@
             <table class="tabela-matriz">
               <thead>
                 <tr>
-                  <th>${rotuloId}</th>
-                  <th style="text-align:left;">Estudante</th>
+                  <th class="col-sticky-1">${rotuloId}</th>
+                  <th class="col-sticky-2" style="text-align:left;">Estudante</th>
                   ${thDatas}
-                  <th>Faltas</th>
-                  <th>Freq.</th>
+                  <th class="col-faltas">Faltas</th>
+                  <th class="col-freq">Freq.</th>
+                  <th class="col-scroll-spacer" aria-hidden="true"></th>
                 </tr>
               </thead>
               <tbody>${trs}</tbody>
@@ -2146,6 +2277,31 @@
         })
         .exportarRelatorioGeralPDF(state.turmaId, mesSelecionado, (typeof ROTULO_IDENTIFICADOR !== 'undefined' && ROTULO_IDENTIFICADOR) ? ROTULO_IDENTIFICADOR : 'SIMADE');
     }
+
+    // Intercepta o botão voltar do navegador / dispositivo (Android/iOS/PC) quando há chamada em andamento
+    window.addEventListener('popstate', function(event) {
+      if (alteracoesNaoSalvas) {
+        // Empurra o estado de volta para manter o usuário na tela até a confirmação
+        try {
+          history.pushState({ chamadaEmAndamento: true }, "");
+        } catch(e) {}
+
+        mostrarConfirm("Você tem um lançamento de chamada em andamento. Deseja realmente cancelar e voltar? As alterações não salvas serão perdidas.", () => {
+          alteracoesNaoSalvas = false;
+          exibirPainelTurmasSemConfirmacao();
+          carregarStatusDosCards();
+        });
+      }
+    });
+
+    // Alerta nativo de fechamento / recarregamento acidental de aba
+    window.addEventListener('beforeunload', function(e) {
+      if (alteracoesNaoSalvas) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    });
   </script>
 </body>
 </html>
